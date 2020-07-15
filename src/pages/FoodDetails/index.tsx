@@ -72,27 +72,48 @@ const FoodDetails: React.FC = () => {
   const routeParams = route.params as Params;
 
   useEffect(() => {
-    async function loadFood(): Promise<void> {
-      // Load a specific food with extras based on routeParams id
-    }
+    // Load a specific food with extras based on routeParams id
+    api.get(`/foods/${routeParams.id}`).then(({ data }) => {
+      const { extras: foodExtras } = data as Food;
 
-    loadFood();
+      setExtras(
+        foodExtras.map(currentExtra => ({ ...currentExtra, quantity: 0 })),
+      );
+      setFood(data);
+    });
   }, [routeParams]);
 
   function handleIncrementExtra(id: number): void {
     // Increment extra quantity
+    const updatedExtras = extras.map(currentExtra =>
+      currentExtra.id === id
+        ? { ...currentExtra, quantity: currentExtra.quantity + 1 }
+        : currentExtra,
+    );
+
+    setExtras(updatedExtras);
   }
 
   function handleDecrementExtra(id: number): void {
     // Decrement extra quantity
+    const updatedExtras = extras.map(currentExtra =>
+      // Only decrement if the id is correct and the quantity is greater than 0
+      currentExtra.id === id && currentExtra.quantity > 0
+        ? { ...currentExtra, quantity: currentExtra.quantity - 1 }
+        : currentExtra,
+    );
+
+    setExtras(updatedExtras);
   }
 
   function handleIncrementFood(): void {
-    // Increment food quantity
+    // Increment food quantity cartTotal
+    setFoodQuantity(previous => previous + 1);
   }
 
   function handleDecrementFood(): void {
     // Decrement food quantity
+    setFoodQuantity(previous => (previous === 1 ? previous : previous - 1));
   }
 
   const toggleFavorite = useCallback(() => {
@@ -101,6 +122,14 @@ const FoodDetails: React.FC = () => {
 
   const cartTotal = useMemo(() => {
     // Calculate cartTotal
+    const extraTotal = extras.reduce(
+      (accumulator, current) => accumulator + current.value * current.quantity,
+      0,
+    );
+
+    const foodTotal = food.price * foodQuantity;
+
+    return formatValue(extraTotal + foodTotal);
   }, [extras, food, foodQuantity]);
 
   async function handleFinishOrder(): Promise<void> {
